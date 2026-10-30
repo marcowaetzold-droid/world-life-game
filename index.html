@@ -1,1 +1,52 @@
 
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WORLD LIFE</title>
+<style>
+body{font-family:Arial;background:#101827;color:white;margin:0;padding:18px}
+h1{color:#5ee2ba}
+.card{background:#202e43;padding:18px;border-radius:15px;margin:14px 0}
+button{background:#5ee2ba;border:0;border-radius:9px;padding:12px;margin:5px;font-weight:bold}
+input{padding:10px;border-radius:8px;border:0}
+small{color:#aebed3}
+</style>
+</head>
+<body>
+<h1>🌍 WORLD LIFE</h1>
+<small>Dein virtuelles Wirtschaftsleben · Alpha 1.0</small>
+<div class="card" id="profil"></div>
+<div class="card">
+<h2>💼 Arbeit & Unternehmen</h2>
+<button onclick="arbeiten()">Arbeiten +250 €</button>
+<button onclick="firma()">Firma gründen 1.000 €</button>
+<button onclick="auftrag()">Firmenauftrag +400 €</button>
+</div>
+<div class="card">
+<h2>🏡 Immobilien</h2>
+<button onclick="haus()">Haus kaufen 50.000 €</button>
+<button onclick="garten()">Gärtner beauftragen 300 €</button>
+</div>
+<div class="card">
+<h2>📜 Aktivitäten</h2>
+<div id="log"></div>
+</div>
+<script>
+let s=JSON.parse(localStorage.getItem('worldlife1'))||{geld:5000,ansehen:0,firma:false,haus:false,hauspunkte:0,logs:[]};
+function speichern(){localStorage.setItem('worldlife1',JSON.stringify(s));anzeigen()}
+function melden(t){s.logs.unshift(t);speichern()}
+function anzeigen(){
+document.getElementById('profil').innerHTML='<h2>👤 Dein Spielerprofil</h2><p>Geld: '+s.geld.toLocaleString('de-DE')+' WL€</p><p>Ansehen: '+s.ansehen+' Punkte</p><p>Eigene Firma: '+(s.firma?'Ja':'Nein')+'</p><p>Eigenheim: '+(s.haus?'Ja':'Nein')+'</p><p>Hauspunkte: '+s.hauspunkte+'</p>';
+document.getElementById('log').innerHTML=s.logs.slice(0,8).map(x=>'<p>'+x+'</p>').join('')
+}
+function arbeiten(){s.geld+=250;s.ansehen++;melden('250 WL€ verdient')}
+function firma(){if(s.firma)return alert('Du hast schon eine Firma');if(s.geld<1000)return alert('Nicht genug Geld');s.geld-=1000;s.firma=true;s.ansehen+=10;melden('Firma gegründet')}
+function auftrag(){if(!s.firma)return alert('Gründe zuerst eine Firma');s.geld+=400;s.ansehen+=2;melden('Simulierten Auftrag erledigt')}
+function haus(){if(s.haus)return alert('Du besitzt schon ein Haus');if(s.geld<50000)return alert('Nicht genug Geld');s.geld-=50000;s.haus=true;melden('Eigenheim gekauft')}
+function garten(){if(!s.haus)return alert('Du brauchst ein Haus');if(s.geld<300)return alert('Nicht genug Geld');s.geld-=300;s.hauspunkte+=10;melden('Gärtner beauftragt: +10 Hauspunkte')}
+anzeigen();
+</script>
+</body>
+</html>
