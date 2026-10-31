@@ -4,49 +4,137 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>WORLD LIFE</title>
+<title>WORLD LIFE 2.0</title>
 <style>
-body{font-family:Arial;background:#101827;color:white;margin:0;padding:18px}
-h1{color:#5ee2ba}
-.card{background:#202e43;padding:18px;border-radius:15px;margin:14px 0}
-button{background:#5ee2ba;border:0;border-radius:9px;padding:12px;margin:5px;font-weight:bold}
-input{padding:10px;border-radius:8px;border:0}
-small{color:#aebed3}
+*{box-sizing:border-box}
+body{margin:0;background:#0d1421;color:#eef5ff;font-family:Arial,sans-serif;padding:16px}
+main{max-width:650px;margin:auto}
+h1{color:#55e4bb;margin-bottom:4px}
+h2{font-size:19px;margin-top:0}
+small,.muted{color:#a6b6c9}
+.card{background:#1b293d;padding:18px;border-radius:16px;margin:14px 0}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:#283950;padding:13px;border-radius:12px}
+.num{font-size:22px;font-weight:bold;color:#65e9c4}
+button,select,input{font-size:15px;border-radius:10px;padding:12px}
+button{background:#55e4bb;color:#10221e;border:0;font-weight:bold;margin:5px 5px 5px 0}
+button:disabled{background:#586776;color:#d0d8df}
+select,input{width:100%;background:#304158;color:white;border:1px solid #50637a;margin:7px 0}
+hr{border:0;border-top:1px solid #405168;margin:14px 0}
+.log{font-size:13px;border-bottom:1px solid #35465b;padding:8px 0}
 </style>
 </head>
-<body>
+<body><main>
 <h1>🌍 WORLD LIFE</h1>
-<small>Dein virtuelles Wirtschaftsleben · Alpha 1.0</small>
-<div class="card" id="profil"></div>
+<small>Wirtschaftssimulation · Version 2.0 · 1 Tag = 24 Stunden</small>
+<div class="card" id="profile"></div>
 <div class="card">
-<h2>💼 Arbeit & Unternehmen</h2>
-<button onclick="arbeiten()">Arbeiten +250 €</button>
-<button onclick="firma()">Firma gründen 1.000 €</button>
-<button onclick="auftrag()">Firmenauftrag +400 €</button>
+<h2>💼 Deine Karriere</h2>
+<label>Beruf auswählen</label>
+<select id="job">
+<option value="service">Servicekraft · 120 € pro Arbeitstag</option>
+<option value="driver">Fahrer · 180 € pro Arbeitstag</option>
+<option value="tech">Techniker · 260 € pro Arbeitstag</option>
+</select>
+<button onclick="chooseJob()">Beruf annehmen</button>
+<hr>
+<div id="workInfo"></div>
+<button id="workBtn" onclick="work()">Arbeitstag absolvieren</button>
 </div>
 <div class="card">
-<h2>🏡 Immobilien</h2>
-<button onclick="haus()">Haus kaufen 50.000 €</button>
-<button onclick="garten()">Gärtner beauftragen 300 €</button>
+<h2>🏢 Unternehmen</h2>
+<p>Gründe ein kleines Dienstleistungsunternehmen. Es erzielt täglich Umsatz, verursacht aber auch Betriebskosten.</p>
+<p><b>Gründung:</b> 2.500 €</p>
+<p><b>Geschätzter Tagesumsatz:</b> 90–190 €</p>
+<p><b>Tägliche Betriebskosten:</b> 65 €</p>
+<button id="businessBtn" onclick="startBusiness()">Unternehmen gründen</button>
+<div id="businessInfo"></div>
 </div>
 <div class="card">
-<h2>📜 Aktivitäten</h2>
-<div id="log"></div>
+<h2>🏠 Dein Leben</h2>
+<p>Deine Lebenshaltung kostet 35 € pro Spieltag.</p>
+<p>Eine Wohnung kostet 8.000 € und senkt deine täglichen Wohn- und Lebenshaltungskosten auf 20 €.</p>
+<button id="homeBtn" onclick="buyHome()">Wohnung kaufen</button>
 </div>
+<div class="card">
+<h2>📊 Wirtschaftstagebuch</h2>
+<div id="history"></div>
+</div>
+<small>Alpha-Test: Dein Spielstand wird nur in diesem Browser gespeichert. Noch keine echten Mitspieler oder serverseitige Wirtschaft.</small>
+</main>
 <script>
-let s=JSON.parse(localStorage.getItem('worldlife1'))||{geld:5000,ansehen:0,firma:false,haus:false,hauspunkte:0,logs:[]};
-function speichern(){localStorage.setItem('worldlife1',JSON.stringify(s));anzeigen()}
-function melden(t){s.logs.unshift(t);speichern()}
-function anzeigen(){
-document.getElementById('profil').innerHTML='<h2>👤 Dein Spielerprofil</h2><p>Geld: '+s.geld.toLocaleString('de-DE')+' WL€</p><p>Ansehen: '+s.ansehen+' Punkte</p><p>Eigene Firma: '+(s.firma?'Ja':'Nein')+'</p><p>Eigenheim: '+(s.haus?'Ja':'Nein')+'</p><p>Hauspunkte: '+s.hauspunkte+'</p>';
-document.getElementById('log').innerHTML=s.logs.slice(0,8).map(x=>'<p>'+x+'</p>').join('')
+const DAY=86400000;
+const jobs={service:{name:"Servicekraft",pay:120},driver:{name:"Fahrer",pay:180},tech:{name:"Techniker",pay:260}};
+const key="worldlife_v2";
+let s;
+try{s=JSON.parse(localStorage.getItem(key))}catch(e){}
+if(!s||!s.created){
+s={created:Date.now(),settled:Date.now(),money:2000,job:"service",lastWork:0,business:false,home:false,days:1,logs:["Willkommen bei WORLD LIFE 2.0!"]};
 }
-function arbeiten(){s.geld+=250;s.ansehen++;melden('250 WL€ verdient')}
-function firma(){if(s.firma)return alert('Du hast schon eine Firma');if(s.geld<1000)return alert('Nicht genug Geld');s.geld-=1000;s.firma=true;s.ansehen+=10;melden('Firma gegründet')}
-function auftrag(){if(!s.firma)return alert('Gründe zuerst eine Firma');s.geld+=400;s.ansehen+=2;melden('Simulierten Auftrag erledigt')}
-function haus(){if(s.haus)return alert('Du besitzt schon ein Haus');if(s.geld<50000)return alert('Nicht genug Geld');s.geld-=50000;s.haus=true;melden('Eigenheim gekauft')}
-function garten(){if(!s.haus)return alert('Du brauchst ein Haus');if(s.geld<300)return alert('Nicht genug Geld');s.geld-=300;s.hauspunkte+=10;melden('Gärtner beauftragt: +10 Hauspunkte')}
-anzeigen();
-</script>
-</body>
-</html>
+function money(n){return Math.round(n).toLocaleString("de-DE")+" €"}
+function note(t){s.logs.unshift(new Date().toLocaleString("de-DE")+": "+t);s.logs=s.logs.slice(0,30)}
+function save(){localStorage.setItem(key,JSON.stringify(s));render()}
+function settle(){
+let count=Math.min(365,Math.floor((Date.now()-s.settled)/DAY));
+if(count<=0)return;
+for(let i=0;i<count;i++){
+let cost=s.home?20:35;
+s.money-=cost;
+if(s.business){
+let revenue=90+Math.floor(Math.random()*101);
+s.money+=revenue-65;
+}
+s.days++;
+}
+s.settled+=count*DAY;
+note(count+" Spieltag(e) abgerechnet: Lebenshaltung und ggf. Unternehmen");
+localStorage.setItem(key,JSON.stringify(s));
+}
+function chooseJob(){
+let next=document.getElementById("job").value;
+if(next===s.job)return alert("Du arbeitest bereits in diesem Beruf.");
+s.job=next;
+note("Neuer Beruf: "+jobs[next].name);
+save();
+}
+function work(){
+let remaining=DAY-(Date.now()-s.lastWork);
+if(remaining>0)return alert("Dein nächster Arbeitstag ist noch nicht verfügbar.");
+s.money+=jobs[s.job].pay;
+s.lastWork=Date.now();
+note("Arbeitstag als "+jobs[s.job].name+": +"+money(jobs[s.job].pay));
+save();
+}
+function startBusiness(){
+if(s.business)return alert("Du besitzt bereits ein Unternehmen.");
+if(s.money<2500)return alert("Du brauchst 2.500 € Startkapital.");
+s.money-=2500;
+s.business=true;
+note("Dienstleistungsunternehmen für 2.500 € gegründet");
+save();
+}
+function buyHome(){
+if(s.home)return alert("Du besitzt bereits eine Wohnung.");
+if(s.money<8000)return alert("Du brauchst 8.000 €.");
+s.money-=8000;
+s.home=true;
+note("Wohnung gekauft: tägliche Kosten sinken");
+save();
+}
+function render(){
+let remaining=Math.max(0,DAY-(Date.now()-s.lastWork));
+let hours=Math.floor(remaining/3600000);
+let mins=Math.ceil((remaining%3600000)/60000);
+document.getElementById("profile").innerHTML='<h2>👤 Dein Leben</h2><div class="stats"><div class="stat"><small>Kontostand</small><div class="num">'+money(s.money)+'</div></div><div class="stat"><small>Spieltag</small><div class="num">'+s.days+'</div></div><div class="stat"><small>Beruf</small><b>'+jobs[s.job].name+'</b></div><div class="stat"><small>Eigentum</small><b>'+(s.home?"Eigene Wohnung":"Mieter")+'</b></div></div>';
+document.getElementById("job").value=s.job;
+document.getElementById("workInfo").textContent=remaining>0?"Nächster Arbeitstag in ca. "+hours+" Std. "+mins+" Min.":"Du kannst heute arbeiten und "+money(jobs[s.job].pay)+" verdienen.";
+document.getElementById("workBtn").disabled=remaining>0;
+document.getElementById("businessBtn").disabled=s.business;
+document.getElementById("businessInfo").textContent=s.business?"Dein Unternehmen ist aktiv. Der nächste Tagesabschluss wird nach 24 Stunden berechnet.":"Noch kein Unternehmen vorhanden.";
+document.getElementById("homeBtn").disabled=s.home;
+document.getElementById("history").innerHTML=s.logs.slice(0,12).map(x=>'<div class="log">'+x+'</div>').join("");
+}
+settle();
+render();
+setInterval(function(){settle();render()},60000);
+</script></body></html>
