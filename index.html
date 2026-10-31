@@ -1,140 +1,48 @@
-
-<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>WORLD LIFE 2.0</title>
-<style>
-*{box-sizing:border-box}
-body{margin:0;background:#0d1421;color:#eef5ff;font-family:Arial,sans-serif;padding:16px}
-main{max-width:650px;margin:auto}
-h1{color:#55e4bb;margin-bottom:4px}
-h2{font-size:19px;margin-top:0}
-small,.muted{color:#a6b6c9}
-.card{background:#1b293d;padding:18px;border-radius:16px;margin:14px 0}
-.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.stat{background:#283950;padding:13px;border-radius:12px}
-.num{font-size:22px;font-weight:bold;color:#65e9c4}
-button,select,input{font-size:15px;border-radius:10px;padding:12px}
-button{background:#55e4bb;color:#10221e;border:0;font-weight:bold;margin:5px 5px 5px 0}
-button:disabled{background:#586776;color:#d0d8df}
-select,input{width:100%;background:#304158;color:white;border:1px solid #50637a;margin:7px 0}
-hr{border:0;border-top:1px solid #405168;margin:14px 0}
-.log{font-size:13px;border-bottom:1px solid #35465b;padding:8px 0}
-</style>
-</head>
-<body><main>
-<h1>🌍 WORLD LIFE</h1>
-<small>Wirtschaftssimulation · Version 2.0 · 1 Tag = 24 Stunden</small>
-<div class="card" id="profile"></div>
-<div class="card">
-<h2>💼 Deine Karriere</h2>
-<label>Beruf auswählen</label>
-<select id="job">
-<option value="service">Servicekraft · 120 € pro Arbeitstag</option>
-<option value="driver">Fahrer · 180 € pro Arbeitstag</option>
-<option value="tech">Techniker · 260 € pro Arbeitstag</option>
-</select>
-<button onclick="chooseJob()">Beruf annehmen</button>
-<hr>
-<div id="workInfo"></div>
-<button id="workBtn" onclick="work()">Arbeitstag absolvieren</button>
-</div>
-<div class="card">
-<h2>🏢 Unternehmen</h2>
-<p>Gründe ein kleines Dienstleistungsunternehmen. Es erzielt täglich Umsatz, verursacht aber auch Betriebskosten.</p>
-<p><b>Gründung:</b> 2.500 €</p>
-<p><b>Geschätzter Tagesumsatz:</b> 90–190 €</p>
-<p><b>Tägliche Betriebskosten:</b> 65 €</p>
-<button id="businessBtn" onclick="startBusiness()">Unternehmen gründen</button>
-<div id="businessInfo"></div>
-</div>
-<div class="card">
-<h2>🏠 Dein Leben</h2>
-<p>Deine Lebenshaltung kostet 35 € pro Spieltag.</p>
-<p>Eine Wohnung kostet 8.000 € und senkt deine täglichen Wohn- und Lebenshaltungskosten auf 20 €.</p>
-<button id="homeBtn" onclick="buyHome()">Wohnung kaufen</button>
-</div>
-<div class="card">
-<h2>📊 Wirtschaftstagebuch</h2>
-<div id="history"></div>
-</div>
-<small>Alpha-Test: Dein Spielstand wird nur in diesem Browser gespeichert. Noch keine echten Mitspieler oder serverseitige Wirtschaft.</small>
-</main>
-<script>
-const DAY=3600000;
-const jobs={service:{name:"Servicekraft",pay:120},driver:{name:"Fahrer",pay:180},tech:{name:"Techniker",pay:260}};
-const key="worldlife_v3";
-let s;
-try{s=JSON.parse(localStorage.getItem(key))}catch(e){}
-if(!s||!s.created){
-s={created:Date.now(),settled:Date.now(),money:2000,job:"service",lastWork:0,business:false,home:false,days:1,logs:["Willkommen bei WORLD LIFE 2.0!"]};
-}
-function money(n){return Math.round(n).toLocaleString("de-DE")+" €"}
-function note(t){s.logs.unshift(new Date().toLocaleString("de-DE")+": "+t);s.logs=s.logs.slice(0,30)}
-function save(){localStorage.setItem(key,JSON.stringify(s));render()}
-function settle(){
-let count=Math.min(365,Math.floor((Date.now()-s.settled)/DAY));
-if(count<=0)return;
-for(let i=0;i<count;i++){
-let cost=s.home?20:35;
-s.money-=cost;
-if(s.business){
-let revenue=90+Math.floor(Math.random()*101);
-s.money+=revenue-65;
-}
-s.days++;
-}
-s.settled+=count*DAY;
-note(count+" Spieltag(e) abgerechnet: Lebenshaltung und ggf. Unternehmen");
-localStorage.setItem(key,JSON.stringify(s));
-}
-function chooseJob(){
-let next=document.getElementById("job").value;
-if(next===s.job)return alert("Du arbeitest bereits in diesem Beruf.");
-s.job=next;
-note("Neuer Beruf: "+jobs[next].name);
-save();
-}
-function work(){
-let remaining=DAY-(Date.now()-s.lastWork);
-if(remaining>0)return alert("Dein nächster Arbeitstag ist noch nicht verfügbar.");
-s.money+=jobs[s.job].pay;
-s.lastWork=Date.now();
-note("Arbeitstag als "+jobs[s.job].name+": +"+money(jobs[s.job].pay));
-save();
-}
-function startBusiness(){
-if(s.business)return alert("Du besitzt bereits ein Unternehmen.");
-if(s.money<2500)return alert("Du brauchst 2.500 € Startkapital.");
-s.money-=2500;
-s.business=true;
-note("Dienstleistungsunternehmen für 2.500 € gegründet");
-save();
-}
-function buyHome(){
-if(s.home)return alert("Du besitzt bereits eine Wohnung.");
-if(s.money<8000)return alert("Du brauchst 8.000 €.");
-s.money-=8000;
-s.home=true;
-note("Wohnung gekauft: tägliche Kosten sinken");
-save();
-}
-function render(){
-let remaining=Math.max(0,DAY-(Date.now()-s.lastWork));
-let hours=Math.floor(remaining/3600000);
-let mins=Math.ceil((remaining%3600000)/60000);
-document.getElementById("profile").innerHTML='<h2>👤 Dein Leben</h2><div class="stats"><div class="stat"><small>Kontostand</small><div class="num">'+money(s.money)+'</div></div><div class="stat"><small>Spieltag</small><div class="num">'+s.days+'</div></div><div class="stat"><small>Beruf</small><b>'+jobs[s.job].name+'</b></div><div class="stat"><small>Eigentum</small><b>'+(s.home?"Eigene Wohnung":"Mieter")+'</b></div></div>';
-document.getElementById("job").value=s.job;
-document.getElementById("workInfo").textContent=remaining>0?"Nächster Arbeitstag in ca. "+hours+" Std. "+mins+" Min.":"Du kannst heute arbeiten und "+money(jobs[s.job].pay)+" verdienen.";
-document.getElementById("workBtn").disabled=remaining>0;
-document.getElementById("businessBtn").disabled=s.business;
-document.getElementById("businessInfo").textContent=s.business?"Dein Unternehmen ist aktiv. Der nächste Tagesabschluss wird nach 24 Stunden berechnet.":"Noch kein Unternehmen vorhanden.";
-document.getElementById("homeBtn").disabled=s.home;
-document.getElementById("history").innerHTML=s.logs.slice(0,12).map(x=>'<div class="log">'+x+'</div>').join("");
-}
-settle();
-render();
-setInterval(function(){settle();render()},60000);
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WORLD LIFE – Testversion</title><style>
+:root{color-scheme:dark;--bg:#09131f;--panel:#142337;--panel2:#1b3047;--line:#30465c;--txt:#f2f7fb;--muted:#adc0d0;--green:#4de0a1;--red:#ff8e8e;--gold:#ffd27a}*{box-sizing:border-box}body{margin:0;background:linear-gradient(155deg,#081522,#122b39);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;color:var(--txt);min-height:100vh}header{padding:22px 16px;background:#0a1827d9;border-bottom:1px solid var(--line)}.wrap{max-width:1040px;margin:auto}h1{font-size:26px;margin:0;letter-spacing:1px}h2{font-size:19px;margin:0 0 13px}h3{font-size:16px;margin:12px 0 6px}.muted,small{color:var(--muted)}.hero{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.pill{border:1px solid #3d6e74;border-radius:99px;padding:5px 10px;color:#a6f6d1;font-size:12px}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}.stat,.card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:15px}.stat strong{font-size:21px;display:block;word-break:break-word}.stat span{color:var(--muted);font-size:12px}nav{display:flex;gap:8px;overflow:auto;padding-bottom:10px;margin-bottom:8px}button,select,input{font:inherit}button{background:#266c83;color:white;border:1px solid #40869a;border-radius:10px;padding:10px 12px;cursor:pointer;font-weight:650}button:hover{filter:brightness(1.14)}button:disabled{opacity:.4;cursor:not-allowed}.secondary{background:#22394e;border-color:#456079}.danger{background:#713d4a;border-color:#b16b75}.active{background:#22a47d;color:#06241c;border-color:#22a47d}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.stack{display:grid;gap:12px}.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.line{padding:9px 0;border-bottom:1px solid var(--line)}.line:last-child{border-bottom:0}.good{color:var(--green)}.bad{color:var(--red)}.gold{color:var(--gold)}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.notice{background:#20394a;border-left:3px solid #51c5b0;border-radius:8px;padding:11px;margin:10px 0}.warn{border-left-color:#ffbd67}.bar{height:10px;border-radius:20px;background:#32475b;overflow:hidden;margin-top:7px}.fill{height:100%;background:#42cfa0}input,select{background:#0d2030;border:1px solid #4b677d;color:white;padding:10px;border-radius:9px;max-width:100%}input[type=number]{width:100px}label{display:block;color:var(--muted);font-size:13px;margin-bottom:4px}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.item{padding:11px;background:var(--panel2);border-radius:11px;margin:8px 0}.tag{font-size:12px;border:1px solid #456079;border-radius:20px;padding:3px 8px;color:#c8d9e8}.hide{display:none}.log{max-height:340px;overflow:auto}.log .line{font-size:13px}.footer{padding:20px 16px 40px;text-align:center;color:var(--muted);font-size:12px}@media(max-width:650px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.grid,.two{grid-template-columns:1fr}header{padding:14px}.stat{padding:11px}.stat strong{font-size:18px}nav button{white-space:nowrap}}
+</style></head><body><header><div class="wrap hero"><div><h1>🌍 WORLD LIFE <span class="pill">TEST 3.0</span></h1><div class="muted">Dein Leben. Deine Entscheidungen. Deine Wirtschaft.</div></div><div><span id="clock" class="pill"></span></div></div></header><main class="wrap" style="padding:0 13px"><div id="stats" class="stats"></div><nav id="nav"></nav><div id="view"></div></main><div class="footer">Lokale Einzelspieler-Testversion · Alex ist ein virtueller NPC · Spielstände werden nur auf diesem Gerät gespeichert.</div><script>
+'use strict';
+const KEY='worldlife_test_30', DAY=3600000, MONTH=30, fmt=n=>Math.round(n).toLocaleString('de-DE')+' €', esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const jobs=[{id:'service',name:'Servicekraft',salary:2100,need:0},{id:'driver',name:'Fahrer',salary:2600,need:0},{id:'tech',name:'Techniker',salary:3900,need:2},{id:'manager',name:'Betriebsleiter',salary:5400,need:4}];
+const homes=[{id:'room',name:'WG-Zimmer',size:22,rent:360,energy:65,water:15,maintenance:0,comfort:55},{id:'flat',name:'2-Zimmer-Wohnung',size:58,rent:760,energy:145,water:30,maintenance:0,comfort:75},{id:'house',name:'Einfamilienhaus',size:145,rent:1550,energy:325,water:65,maintenance:75,comfort:90},{id:'villa',name:'Luxusvilla',size:340,rent:4500,energy:980,water:180,maintenance:380,comfort:100}];
+const cars=[{id:'none',name:'Kein Auto',price:0,cost:0,comfort:0},{id:'used',name:'Gebrauchtwagen',price:3900,cost:165,comfort:5},{id:'family',name:'Familienauto',price:16500,cost:335,comfort:9},{id:'lux',name:'Sportwagen',price:69000,cost:980,comfort:15}];
+const goods=[{id:'tv',name:'Fernseher',price:520,life:140,comfort:6,repair:190},{id:'phone',name:'Smartphone',price:430,life:110,comfort:5,repair:160},{id:'washer',name:'Waschmaschine',price:610,life:170,comfort:8,repair:240},{id:'bike',name:'Fahrrad',price:340,life:170,comfort:5,repair:90},{id:'laptop',name:'Laptop',price:850,life:150,comfort:7,repair:260},{id:'console',name:'Spielekonsole',price:390,life:120,comfort:5,repair:140}];
+const pets=[{id:'dog',name:'Hund',price:350,monthly:125,comfort:9},{id:'cat',name:'Katze',price:110,monthly:70,comfort:6}];
+function fresh(){return {version:3,name:'Du',money:2400,day:1,stamp:Date.now(),job:'service',level:0,experience:0,lastWork:0,home:'room',car:'none',items:[],pets:[],insurance:{home:false,device:false,car:false,pet:false},food:'normal',hobby:'none',health:85,stress:15,baseMood:82,bank:[],events:[],debt:0,lastEvent:0,travel:0,negotiation:0,raise:0,partner:{trust:50,offers:0,discount:0},company:false,companyStock:0,companyRevenue:0,studyUntil:0}}
+let s;try{s=Object.assign(fresh(),JSON.parse(localStorage.getItem(KEY)||'null')||{})}catch{s=fresh()};if(!Array.isArray(s.items))s.items=[];if(!Array.isArray(s.bank))s.bank=[];if(!Array.isArray(s.events))s.events=[];s.insurance=Object.assign(fresh().insurance,s.insurance||{});s.partner=Object.assign(fresh().partner,s.partner||{});
+let tab='overview', message='';
+const by=(a,id)=>a.find(x=>x.id===id), job=()=>by(jobs,s.job),home=()=>by(homes,s.home),car=()=>by(cars,s.car);
+function save(){localStorage.setItem(KEY,JSON.stringify(s))}function flash(t){message=t;render()}function transaction(amount,label){s.money+=amount;s.bank.unshift({day:s.day,label,amount,balance:Math.round(s.money)});s.bank=s.bank.slice(0,140)}function event(t){s.events.unshift({day:s.day,text:t});s.events=s.events.slice(0,45)}
+function expenses(){let h=home(),c=car(),pet=s.pets.reduce((v,id)=>v+by(pets,id).monthly,0);let ins=(s.insurance.home?20:0)+(s.insurance.device?24:0)+(s.insurance.car&&s.car!=='none'?28:0)+(s.insurance.pet&&s.pets.length?25:0);let food={cheap:170,normal:310,healthy:470}[s.food];let hobby={none:0,sport:55,music:90,club:130}[s.hobby];return {Wohnen:h.rent,'Strom, Heizung, Wasser':h.energy+h.water,'Instandhaltung':h.maintenance,Auto:c.cost,Ernährung:food,Hobbys:hobby,Haustiere:pet,Versicherungen:ins,'Kreditrate':s.debt>0?Math.min(120,s.debt):0}}
+function gross(){return job().salary+(s.raise||0)+Math.min(1000,s.experience*35)}function net(){return Math.round(gross()*.74)}function costs(){return Object.values(expenses()).reduce((a,b)=>a+b,0)}function mood(){let m=s.baseMood+(home().comfort-55)*.3+car().comfort+s.items.filter(i=>!i.broken).reduce((v,i)=>v+(by(goods,i.id)?.comfort||0),0)+s.pets.reduce((v,id)=>v+by(pets,id).comfort,0)+(s.hobby==='none'?0:5)-(s.items.filter(i=>i.broken).length*7)-s.stress*.22;return Math.max(0,Math.min(100,Math.round(m)))}
+function monthly(){let salary=net();transaction(salary,'Nettogehalt – '+job().name);for(let [k,v] of Object.entries(expenses()))if(v){transaction(-v,k);if(k==='Kreditrate')s.debt=Math.max(0,s.debt-v)}if(s.company){let rev=600+Math.floor(Math.random()*550),cost=390;transaction(rev,'Umsatz eigener Laden');transaction(-cost,'Betriebskosten eigener Laden');s.companyRevenue+=rev}event('Monatsabrechnung: Gehalt '+fmt(salary)+', Fixkosten '+fmt(costs())+'.');if(s.money<0){s.stress=Math.min(100,s.stress+9);event('⚠️ Konto im Minus. Du solltest Kosten senken oder dein Einkommen erhöhen.')}else s.stress=Math.max(0,s.stress-3)}
+function randomEvent(){if(Math.random()>.18)return;let available=s.items.filter(i=>!i.broken);let r=Math.random();if(available.length&&r<.46){let it=available[Math.floor(Math.random()*available.length)];it.broken=true;event('🔧 '+by(goods,it.id).name+' ist defekt. Reparatur oder Ersatz nötig.');return}if(s.car!=='none'&&r<.65){let amount=150+Math.floor(Math.random()*300);transaction(-amount,'Ungeplante Autoreparatur');event('🚗 Autoreparatur: '+fmt(amount));return}if(s.pets.length&&r<.78){let amount=85+Math.floor(Math.random()*150);if(s.insurance.pet)amount=Math.round(amount*.3);transaction(-amount,'Tierarzt');event('🐾 Tierarztbesuch: '+fmt(amount));return}if(r<.9){s.health=Math.max(30,s.health-8);event('🤒 Du bist erkältet. Deine Gesundheit ist gesunken.')}else{transaction(110,'Kleine Sonderprämie');event('🎉 Du hast eine Sonderprämie von 110 € bekommen!')}}
+function advance(n=1){n=Math.min(n,240);for(let k=0;k<n;k++){s.day++;if(s.day%MONTH===0)monthly();if(s.day%5===0){s.health=Math.min(100,s.health+(s.food==='healthy'?2:s.food==='cheap'?-1:1));s.stress=Math.max(0,s.stress-(s.hobby==='none'?0:2))}if(s.day%8===0)randomEvent();if(s.studyUntil&&s.day>=s.studyUntil){s.studyUntil=0;s.level++;event('🎓 Weiterbildung abgeschlossen! Qualifikationsstufe '+s.level+'.')}}save()}
+function sync(){let passed=Math.floor((Date.now()-s.stamp)/DAY);if(passed>0){advance(passed);s.stamp+=passed*DAY;save()}}sync();
+function act(fn){try{sync();fn();save();render()}catch(e){flash(e.message)}}function need(n){if(s.money<n)throw Error('Dafür fehlen dir '+fmt(n-s.money)+'.')}function spend(n,label){need(n);transaction(-n,label)}
+function switchTab(t){tab=t;message='';render()}function work(){act(()=>{if(s.lastWork===s.day)throw Error('Du hast heute bereits gearbeitet. Ein Spieltag dauert 60 echte Minuten.');if(s.health<35)throw Error('Du bist zu krank zum Arbeiten. Erhole dich zuerst.');s.lastWork=s.day;s.experience++;s.stress=Math.min(100,s.stress+3);let bonus=35+Math.round(gross()/100);transaction(bonus,'Arbeitsbonus');event('💼 Arbeitstag absolviert. Arbeitsbonus '+fmt(bonus)+'. Dein Monatsgehalt kommt zur Monatsabrechnung.')})}
+function chooseJob(id){act(()=>{let j=by(jobs,id);if(s.level<j.need)throw Error('Für diesen Beruf brauchst du Qualifikationsstufe '+j.need+'.');if(s.job===id)throw Error('Diesen Beruf hast du bereits.');s.job=id;s.experience=0;s.raise=0;event('💼 Neuer Job: '+j.name+'.')})}
+function negotiate(){act(()=>{if(s.day-s.negotiation<12)throw Error('Du kannst nur alle 12 Spieltage verhandeln.');if(s.experience<4)throw Error('Sammle erst mindestens vier Arbeitstage Berufserfahrung.');s.negotiation=s.day;let chance=Math.min(.8,.23+s.experience*.035+s.level*.05);if(Math.random()<chance){let raise=100+Math.round(Math.random()*170);s.raise=(s.raise||0)+raise;event('🤝 Gehaltsverhandlung erfolgreich! +'+fmt(raise)+' brutto pro Monat.');}else event('🤝 Gehaltsverhandlung abgelehnt. Mehr Erfahrung könnte helfen.')})}
+function study(){act(()=>{if(s.studyUntil)throw Error('Du absolvierst bereits eine Weiterbildung.');let price=450+s.level*280;spend(price,'Weiterbildung');s.studyUntil=s.day+10+s.level*5;event('🎓 Weiterbildung gestartet. Abschluss an Spieltag '+s.studyUntil+'.')})}
+function buyHome(id){act(()=>{if(id===s.home)return;let h=by(homes,id);let deposit=Math.round(h.rent*.7);spend(deposit,'Umzug und Kaution: '+h.name);s.home=id;event('🏠 Umzug in '+h.name+'. Monatliche Wohnkosten ändern sich.')})}
+function buyCar(id){act(()=>{if(id===s.car)return;let c=by(cars,id),old=car();if(c.price>0)spend(c.price,'Autokauf: '+c.name);if(old.price>0)transaction(Math.round(old.price*.55),'Verkauf: '+old.name);s.car=id;event('🚗 Fahrzeug gewechselt: '+c.name+'.')})}
+function buyGood(id){act(()=>{let g=by(goods,id);spend(g.price,'Kauf: '+g.name);s.items.push({id,broken:false,day:s.day});event('🛍️ '+g.name+' gekauft.')})}
+function repair(i){act(()=>{let it=s.items[i];if(!it||!it.broken)throw Error('Dieser Gegenstand ist nicht defekt.');let g=by(goods,it.id);let covered=s.insurance.device&&Math.random()<.6;let price=covered?Math.round(g.repair*.2):g.repair;spend(price,'Reparatur: '+g.name);it.broken=false;event('🔧 '+g.name+' repariert. '+(covered?'Versicherung hat einen Teil übernommen.':'Keine Erstattung.'))})}
+function sell(i){act(()=>{let it=s.items[i];if(!it)throw Error('Nicht vorhanden.');let g=by(goods,it.id),age=s.day-it.day;let price=Math.max(10,Math.round(g.price*(it.broken?.12:.52)*Math.max(.35,1-age/450)));transaction(price,'Verkauf an Alex: '+g.name);s.items.splice(i,1);s.partner.trust=Math.min(100,s.partner.trust+2);event('🤝 Alex kauft '+g.name+' für '+fmt(price)+'.')})}
+function tradeOffer(){let stock=[{id:'tv',price:310},{id:'bike',price:210},{id:'phone',price:270},{id:'console',price:230}];let o=stock[(Math.floor(s.day/3)+s.partner.offers)%stock.length];return {...o,price:Math.max(50,o.price-(s.partner.discount||0))}}
+function trade(action){act(()=>{let offer=tradeOffer(),g=by(goods,offer.id);if(action==='buy'){spend(offer.price,'Kauf von Alex: '+g.name);s.items.push({id:g.id,broken:false,day:s.day});s.partner.trust=Math.min(100,s.partner.trust+3);s.partner.discount=0;s.partner.offers++;event('🤝 Du kaufst '+g.name+' von Alex für '+fmt(offer.price)+'.')}else if(action==='negotiate'){if(Math.random()<.55){let reduction=Math.round(offer.price*.12);s.partner.discount=(s.partner.discount||0)+reduction;event('🤝 Alex gewährt '+fmt(reduction)+' Rabatt auf das aktuelle Angebot!')}else event('🤝 Alex: „Bei diesem Preis kann ich leider nicht mitgehen.“')}else{s.partner.offers++;s.partner.discount=0;event('🤝 Du hast Alex’ Angebot abgelehnt. Er sucht ein anderes Produkt.') }})}
+function setFood(id){act(()=>{s.food=id;event('🥗 Ernährungsplan geändert: '+id+'.')})}function setHobby(id){act(()=>{s.hobby=id;event('🎨 Freizeitaktivität geändert: '+id+'.')})}function toggleInsurance(id){act(()=>{s.insurance[id]=!s.insurance[id];event('🛡️ Versicherung '+id+' '+(s.insurance[id]?'abgeschlossen':'gekündigt')+'.')})}function adopt(id){act(()=>{let p=by(pets,id);spend(p.price,'Tieradoption: '+p.name);s.pets.push(id);event('🐾 Ein '+p.name+' gehört jetzt zu deinem Haushalt.')})}function holiday(){act(()=>{let price=850;spend(price,'Flug, Hotel und Urlaub');s.stress=Math.max(0,s.stress-18);s.health=Math.min(100,s.health+5);s.baseMood=Math.min(95,s.baseMood+3);s.travel++;event('✈️ Urlaub gemacht! Flug und Hotel '+fmt(price)+'. Erholung + Gesundheit.')})}function foundCompany(){act(()=>{if(s.company)throw Error('Du hast bereits ein Unternehmen.');spend(3500,'Firmengründung');s.company=true;event('🏪 Du hast deinen ersten Laden gegründet! Einnahmen und Kosten erscheinen in der Monatsabrechnung.')})}function borrow(){act(()=>{if(s.debt>3000)throw Error('Die Bank lehnt weitere Kredite ab.');transaction(1000,'Bankkredit');s.debt+=1120;event('🏦 1.000 € Kredit erhalten, Rückzahlung 1.120 € in Raten.')})}function rest(){act(()=>{if(s.lastRest===s.day)throw Error('Du hast dich heute schon erholt.');s.lastRest=s.day;s.stress=Math.max(0,s.stress-10);s.health=Math.min(100,s.health+3);event('🧘 Du hast dich ausgeruht.')})}
+function resetGame(){if(confirm('Wirklich den gesamten Spielstand löschen und neu anfangen?')){s=fresh();save();tab='overview';render()}}
+function line(k,v,cls=''){return `<div class="row line"><span>${k}</span><strong class="${cls}">${v}</strong></div>`}function btn(label,call,cls=''){return `<button class="${cls}" onclick="${call}">${label}</button>`}function card(title,body){return `<section class="card"><h2>${title}</h2>${body}</section>`}
+function overview(){let exp=costs(),diff=net()-exp;return `<div class="grid">${card('💳 Deine Finanzen',line('Monatliches Nettogehalt',fmt(net()),'good')+line('Monatliche Fixkosten',fmt(exp),'bad')+line('Voraussichtlich übrig',fmt(diff),diff>=0?'good':'bad')+`<div class="notice ${diff<0?'warn':''}">${diff<0?'⚠️ Deine laufenden Kosten übersteigen dein Gehalt.':'Du kannst sparen, handeln oder dir neue Ziele setzen.'}</div>`+btn('Bankkonto ansehen',"switchTab('bank')"))}${card('🙂 Dein Leben',line('Beruf',job().name)+line('Wohnung',home().name+' · '+home().size+' m²')+line('Fahrzeug',car().name)+line('Gesundheit',s.health+'/100')+line('Stress',s.stress+'/100')+line('Zufriedenheit',mood()+'/100')+`<div class="bar"><div class="fill" style="width:${mood()}%"></div></div>`+`<div class="actions">${btn('Arbeiten', 'work()')}${btn('Erholen','rest()','secondary')}</div>`)}${card('🎯 Deine nächsten Ziele',`<p>Verdiene Geld, steigere deine Qualifikation, verhandle dein Gehalt, verbessere dein Zuhause und handle mit Alex.</p><div class="actions">${btn('Jobs ansehen',"switchTab('career')")}${btn('Mit Alex handeln',"switchTab('trade')")}${btn('Einkaufen',"switchTab('shop')")}</div>`)}${card('📰 Letzte Ereignisse',s.events.length?s.events.slice(0,6).map(x=>`<div class="line"><small>Tag ${x.day}</small><div>${esc(x.text)}</div></div>`).join(''):'<p class="muted">Dein neues Leben beginnt. Viel Erfolg!</p>')}</div>`}
+function bank(){let e=expenses(),sum=costs();return `<div class="grid">${card('🏦 WORLD BANK',`<div class="muted">Privates Girokonto</div><div style="font-size:30px;font-weight:800;margin:8px 0">${fmt(s.money)}</div>${line('Nettogehalt pro Monat',fmt(net()),'good')}${line('Fixkosten pro Monat',fmt(sum),'bad')}${line('Freier Betrag',fmt(net()-sum),net()-sum>=0?'good':'bad')}${line('Offener Kredit',fmt(s.debt))}<div class="actions">${btn('1.000 € Kredit beantragen','borrow()')}</div><p class="muted">Ein Spielmonat hat 30 Spieltage. Ein Spieltag dauert 60 echte Minuten.</p>`)}${card('📊 Deine monatlichen Ausgaben',Object.entries(e).map(([k,v])=>line(esc(k),fmt(v))).join('')+line('Gesamt',fmt(sum)))}${card('📃 Kontoauszug',`<div class="log">${s.bank.length?s.bank.map(x=>`<div class="line row"><span><small>Tag ${x.day}</small><br>${esc(x.label)}</span><strong class="${x.amount>=0?'good':'bad'}">${x.amount>=0?'+':''}${fmt(x.amount)}</strong></div>`).join(''):'<p class="muted">Noch keine Buchungen. Kaufe etwas oder warte auf die Monatsabrechnung.</p>'}</div>`)}${card('⏳ Nächste Abrechnung',`<p>Am Spieltag <strong>${Math.ceil((s.day+1)/MONTH)*MONTH}</strong> werden Gehalt, Wohnen, Energie, Auto, Ernährung und Versicherungen gebucht.</p><p class="muted">Für schnelle Tests kannst du im Bereich „Teststeuerung“ Spieltage vorspulen.</p>`)}</div>`}
+function career(){return `<div class="grid">${card('💼 Beruf und Einkommen',line('Aktueller Beruf',job().name)+line('Monatliches Brutto',fmt(gross()))+line('Geschätztes Netto',fmt(net()))+line('Erfahrung',s.experience+' Arbeitstage')+line('Qualifikation',`Stufe ${s.level}`)+`<div class="actions">${btn('Heute arbeiten','work()')}${btn('Gehalt verhandeln','negotiate()','secondary')}</div><p class="muted">Gehaltsverhandlungen sind frühestens nach vier Arbeitstagen und dann alle zwölf Spieltage möglich.</p>`)}${card('🎓 Ausbildung und Weiterbildung',`<p>Steige durch Weiterbildung in höhere Berufe auf.</p>${line('Deine Qualifikation','Stufe '+s.level)}${line('Nächster Kurs',fmt(450+s.level*280))}${s.studyUntil?`<div class="notice">Kurs läuft bis Spieltag ${s.studyUntil}.</div>`:btn('Weiterbildung beginnen','study()')}<p class="muted">Ein Kurs dauert mehrere Spieltage. Du kannst währenddessen weiterarbeiten.</p>`)}${card('📋 Stellenmarkt',jobs.map(j=>`<div class="item"><div class="row"><strong>${j.name}</strong><span class="tag">${fmt(j.salary)} brutto</span></div><small>Erforderliche Qualifikation: Stufe ${j.need}</small><div class="actions">${btn(s.job===j.id?'Aktueller Job':s.level<j.need?'Noch gesperrt':'Bewerben',`chooseJob('${j.id}')`,'secondary')}</div></div>`).join(''))}${card('🏪 Selbstständigkeit',`<p>Gründe einen kleinen Laden. Er bringt bei der Monatsabrechnung Umsatz, verursacht aber auch Betriebskosten.</p>${line('Status',s.company?'Eigener Laden eröffnet':'Noch kein Unternehmen')}${s.company?line('Bisheriger Umsatz',fmt(s.companyRevenue)):btn('Laden gründen – 3.500 €','foundCompany()')}</div>`)}</div>`}
+function housing(){return `<div class="grid">${card('🏠 Dein Zuhause',line('Wohnung',home().name)+line('Wohnfläche',home().size+' m²')+line('Miete',fmt(home().rent)+'/Monat')+line('Energie und Wasser',fmt(home().energy+home().water)+'/Monat')+line('Instandhaltung',fmt(home().maintenance)+'/Monat')+`<p class="muted">Mehr Wohnfläche erhöht vor allem Heizung, Wasser und Instandhaltung.</p>`)}${card('🏘️ Immobilienangebote',homes.map(h=>`<div class="item"><strong>${h.name} · ${h.size} m²</strong><div class="muted">Miete ${fmt(h.rent)} · Energie/Wasser ${fmt(h.energy+h.water)} pro Monat</div><small>Einmalige Umzugskosten: ${fmt(Math.round(h.rent*.7))}</small><div class="actions">${btn(s.home===h.id?'Du wohnst hier':'Umziehen',`buyHome('${h.id}')`,'secondary')}</div></div>`).join(''))}${card('🚗 Dein Fahrzeug',line('Aktuell',car().name)+line('Monatliche Fahrzeugkosten',fmt(car().cost))+`<p class="muted">Darin sind Kraftstoff, Steuer, Grundversicherung und Wartungsrücklage enthalten.</p>`)}${card('🚘 Automarkt',cars.map(c=>`<div class="item"><strong>${c.name}</strong><div class="muted">Kauf ${fmt(c.price)} · laufend ${fmt(c.cost)}/Monat</div><div class="actions">${btn(s.car===c.id?'Aktuelles Fahrzeug':c.id==='none'?'Auto verkaufen':'Kaufen',`buyCar('${c.id}')`,'secondary')}</div></div>`).join(''))}</div>`}
+function shop(){return `<div class="grid">${card('🛍️ Geschäft – Elektronik und Freizeit',goods.map(g=>`<div class="item"><div class="row"><strong>${g.name}</strong><strong>${fmt(g.price)}</strong></div><small>Lebensqualität +${g.comfort}, solange funktionstüchtig</small><div class="actions">${btn('Kaufen',`buyGood('${g.id}')`)}</div></div>`).join(''))}${card('📦 Dein Besitz',s.items.length?s.items.map((it,i)=>{let g=by(goods,it.id);return `<div class="item"><div class="row"><strong>${g.name}</strong><span class="${it.broken?'bad':'good'}">${it.broken?'Defekt':'Funktioniert'}</span></div><small>Gekauft an Tag ${it.day}</small><div class="actions">${it.broken?btn('Reparieren · '+fmt(g.repair),`repair(${i})`):''}${btn('An Alex verkaufen',`sell(${i})`,'secondary')}</div></div>`}).join(''):'<p class="muted">Du besitzt noch keine Gegenstände.</p>')}${card('🛡️ Versicherungen',`<p>Versicherungen haben monatliche Beiträge. Nicht jeder Schaden ist versichert: normaler Verschleiß ist meist ausgeschlossen.</p>`+[['home','Hausrat',20],['device','Geräteschutz',24],['car','Auto-Zusatzschutz',28],['pet','Tierkrankenversicherung',25]].map(([id,name,price])=>`<div class="item row"><span><strong>${name}</strong><br><small>${fmt(price)}/Monat</small></span>${btn(s.insurance[id]?'Kündigen':'Abschließen',`toggleInsurance('${id}')`,s.insurance[id]?'danger':'secondary')}</div>`).join(''))}${card('🔧 Defekte und Schäden',`<p>Defekte Gegenstände senken die Zufriedenheit. Repariere sie oder kaufe Ersatz. Der Geräteschutz erstattet in dieser Testversion bei manchen versicherten Reparaturfällen einen Teil der Kosten.</p><p class="muted">Schäden werden gelegentlich bei der Tagesabrechnung ausgelöst.</p>`)}</div>`}
+function trade(){let offer=tradeOffer(),g=by(goods,offer.id);return `<div class="grid">${card('🤝 Dein virtueller Handelspartner Alex',`<div style="font-size:44px">🧑‍💼</div><h3>Alex Berger · Händler</h3><p>„Hallo! Ich kaufe gebrauchte Gegenstände an und habe immer wieder Sonderangebote. Schau dich um!“</p>${line('Vertrauen',s.partner.trust+'/100')}${line('Abgeschlossene Angebote',s.partner.offers)}<div class="notice">Alex ist ein computergesteuerter Händler. Seine Angebote wechseln, und Verhandlungen können scheitern.</div>`)}${card('🏷️ Aktuelles Angebot von Alex',`<div class="item"><div class="muted">Gebraucht, geprüft, funktionsfähig</div><h2>${g.name}</h2>${line('Neupreis im Geschäft',fmt(g.price))}${line('Alex verlangt',fmt(offer.price),'gold')}${line('Deine Ersparnis',fmt(g.price-offer.price),'good')}<div class="actions">${btn('Von Alex kaufen','trade("buy")')}${btn('Preis verhandeln','trade("negotiate")','secondary')}${btn('Ablehnen','trade("reject")','danger')}</div></div>`)}${card('📦 Verkaufe an Alex',`<p>Du kannst Gegenstände aus deinem Besitz an Alex verkaufen. Sein Preis hängt von Zustand und Alter ab.</p>${s.items.length?s.items.map((it,i)=>`<div class="item row"><span>${by(goods,it.id).name} ${it.broken?'· defekt':''}</span>${btn('Verkaufen',`sell(${i})`,'secondary')}</div>`).join(''):'<p class="muted">Du hast noch keine verkäuflichen Gegenstände.</p>'}`)}${card('💬 So funktioniert der Handel',`<p>Alex kauft und verkauft Waren gegen echtes Spielgeld von deinem WORLD-BANK-Konto. Alle Zahlungen erscheinen im Kontoauszug.</p><p class="muted">Später können echte Spieler eigene Shops eröffnen, miteinander handeln und frei verhandeln. Das ist in dieser lokalen Testversion noch nicht möglich.</p>`)}</div>`}
+function life(){return `<div class="grid">${card('❤️ Gesundheit und Wohlbefinden',line('Gesundheit',s.health+'/100')+line('Zufriedenheit',mood()+'/100')+line('Stress',s.stress+'/100')+`<div class="actions">${btn('Erholen und entspannen','rest()')}</div>`)}${card('🥗 Ernährung',`<p>Deine Ernährung beeinflusst Ausgaben und langfristig deine Gesundheit.</p>`+[['cheap','Sparsam',170],['normal','Ausgewogen',310],['healthy','Gesund & frisch',470]].map(([id,name,price])=>`<div class="item row"><span>${name}<br><small>${fmt(price)}/Monat</small></span>${btn(s.food===id?'Ausgewählt':'Wählen',`setFood('${id}')`,'secondary')}</div>`).join(''))}${card('🏃 Hobbys und Freizeit',`<p>Hobbys kosten manchmal Geld, helfen aber beim Stressabbau.</p>`+[['none','Kein regelmäßiges Hobby',0],['sport','Sport & Fitness',55],['music','Musik & Kreativität',90],['club','Verein & Gemeinschaft',130]].map(([id,name,price])=>`<div class="item row"><span>${name}<br><small>${fmt(price)}/Monat</small></span>${btn(s.hobby===id?'Ausgewählt':'Wählen',`setHobby('${id}')`,'secondary')}</div>`).join(''))}${card('🐾 Haustiere',`<p>Haustiere bringen Freude, brauchen aber Futter, Pflege und manchmal den Tierarzt.</p>`+pets.map(p=>`<div class="item row"><span>${p.name}<br><small>Adoption ${fmt(p.price)} · ${fmt(p.monthly)}/Monat</small></span>${btn('Adoptieren',`adopt('${p.id}')`,'secondary')}</div>`).join('')+`<p>Deine Haustiere: ${s.pets.length?s.pets.map(id=>by(pets,id).name).join(', '):'Noch keine'}</p>`)}${card('✈️ Reisen und Urlaub',`<p>Buche einen Kurzurlaub mit Flug und Hotel. Erholung senkt Stress und verbessert deine Gesundheit.</p>${line('Reisen bisher',s.travel)}${line('Flug + Hotel + Ausgaben',fmt(850))}${btn('Urlaub buchen – 850 €','holiday()')}`)}</div>`}
+function test(){return `<div class="grid">${card('⏱️ Teststeuerung',`<p>Im normalen Spiel entspricht <strong>1 Spieltag 60 echten Minuten</strong>. Damit du die Wirtschaft sofort ausprobieren kannst, kannst du in dieser Testversion Zeit vorspulen.</p>${line('Aktueller Spieltag',s.day)}${line('Nächste Monatsabrechnung','Tag '+(Math.ceil((s.day+1)/MONTH)*MONTH))}<div class="actions">${btn('+1 Tag','act(()=>advance(1))')}${btn('+7 Tage','act(()=>advance(7))','secondary')}${btn('+30 Tage','act(()=>advance(30))','secondary')}</div><div class="notice warn">Beim Vorspulen werden auch Rechnungen, Gehälter, Weiterbildung und zufällige Ereignisse verarbeitet.</div>`)}${card('🗂️ Ereignisprotokoll',`<div class="log">${s.events.map(x=>`<div class="line"><small>Spieltag ${x.day}</small><div>${esc(x.text)}</div></div>`).join('')||'Noch keine Ereignisse.'}</div>`)}${card('⚙️ Spielstand',`<p>Dein Fortschritt wird automatisch in diesem Browser gespeichert. Er wird nicht zwischen Geräten synchronisiert.</p>${btn('Neues Spiel beginnen','resetGame()','danger')}<p class="muted">Achtung: Das löscht den bisherigen Testspielstand.</p>`)}${card('🧪 Was kommt später?',`<p>Mehr Berufe, Immobilienkauf statt nur Miete, Familien, komplexere Haustierpflege, echte Reisen, umfassende Versicherungsschäden, Lagerbestände, Lieferketten und Online-Multiplayer.</p><p>Diese Testversion konzentriert sich auf das Zusammenspiel von Einkommen, Kosten, Lebensqualität und Handel.</p>`)}</div>`}
+const pages={overview:['🏠 Übersicht',overview],bank:['💳 Bankkonto',bank],career:['💼 Beruf',career],housing:['🏘️ Wohnen & Auto',housing],shop:['🛍️ Shop',shop],trade:['🤝 Alex',trade],life:['❤️ Leben',life],test:['⏱️ Test',test]};
+function render(){document.getElementById('clock').textContent='Spieltag '+s.day+' · 1 Tag = 60 Min.';document.getElementById('stats').innerHTML=`<div class="stat"><span>Kontostand</span><strong>${fmt(s.money)}</strong></div><div class="stat"><span>Nettogehalt / Monat</span><strong>${fmt(net())}</strong></div><div class="stat"><span>Fixkosten / Monat</span><strong>${fmt(costs())}</strong></div><div class="stat"><span>Zufriedenheit</span><strong>${mood()}/100</strong></div>`;document.getElementById('nav').innerHTML=Object.entries(pages).map(([id,[label]])=>btn(label,`switchTab('${id}')`,tab===id?'active':'secondary')).join('');document.getElementById('view').innerHTML=(message?`<div class="notice warn">${esc(message)} <button class="secondary" onclick="message='';render()">OK</button></div>`:'')+pages[tab][1]();}
+render();setInterval(()=>{sync();document.getElementById('clock').textContent='Spieltag '+s.day+' · 1 Tag = 60 Min.'},30000);
 </script></body></html>
