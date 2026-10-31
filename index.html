@@ -1,7 +1,10 @@
 <!doctype html><html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WORLD LIFE 4</title>
 <style>:root{color-scheme:dark}*{box-sizing:border-box}body{background:#091723;color:#edf6fb;font:15px system-ui;margin:0}header,main{max-width:1050px;margin:auto;padding:16px}h1{margin:0}small,.muted{color:#a8bdc9}.stats,.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card,.stat{background:#172b3d;border:1px solid #385269;border-radius:14px;padding:14px;margin-bottom:10px}.stat strong{display:block;font-size:20px}nav{display:flex;overflow-x:auto;gap:7px;padding:12px 0}button,select,input{font:inherit;border-radius:9px;padding:10px;border:1px solid #547086;background:#27475e;color:white}button{cursor:pointer}button:disabled{opacity:.4}button.active{background:#28a987;color:#06261e}button.danger{background:#763e4a}nav button{white-space:nowrap}.item{background:#20384c;border-radius:10px;padding:12px;margin:8px 0}.row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.line{border-bottom:1px solid #385269;padding:8px 0}.notice{padding:12px;border-left:3px solid #eeb45d;background:#294155;border-radius:7px;margin:8px 0}select{max-width:100%}@media(max-width:650px){.grid{grid-template-columns:1fr}.stat strong{font-size:17px}}</style>
-<header><h1>🌍 WORLD LIFE <small>TEST 4.0</small></h1><p class="muted">Dein Leben · Dein Besitz · Deine Wirtschaft</p><div id="clock"></div></header><main><div id="stats" class="stats"></div><nav id="nav"></nav><div id="message"></div><div id="view"></div></main>
+<header><h1>🌍 WORLD LIFE <small>TEST 4.1</small></h1><p class="muted">Dein Leben · Dein Besitz · Deine Wirtschaft</p><div id="clock"></div></header><main><div id="stats" class="stats"></div><nav id="nav"></nav><div id="message"></div><div id="view"></div></main>
 <script>
+window.addEventListener('error',function(e){var m=document.getElementById('message');if(m)m.innerHTML='<div class="notice">⚠️ Spielstart-Fehler: '+String(e.message).replace(/</g,'&lt;')+'<p>Bitte diesen Fehler als Screenshot schicken. Dein Spielstand bleibt erhalten.</p></div>';});
+window.addEventListener('unhandledrejection',function(e){var m=document.getElementById('message');if(m)m.textContent='⚠️ Fehler: '+String(e.reason);});
+</script><script>
 'use strict';
 const KEY='worldlife_test_30',DAY=3600000,fmt=n=>Math.round(n).toLocaleString('de-DE')+' €',esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const categories=[
@@ -31,9 +34,9 @@ const cars=[['none','Kein Auto',0,0,0],['used','Gebrauchtwagen',3900,165,5],['fa
 const homes=[{id:'room',name:'WG-Zimmer',rent:360,energy:80,comfort:55},{id:'flat',name:'2-Zimmer-Wohnung',rent:760,energy:175,comfort:75},{id:'house',name:'Einfamilienhaus',rent:1550,energy:465,comfort:90},{id:'villa',name:'Luxusvilla',rent:4500,energy:1540,comfort:100}];
 const jobs=[{id:'service',name:'Servicekraft',salary:2100,need:0},{id:'driver',name:'Fahrer',salary:2600,need:0},{id:'tech',name:'Techniker',salary:3900,need:2},{id:'manager',name:'Betriebsleiter',salary:5400,need:4}];
 const fresh=()=>({version:4,money:2400,day:1,stamp:Date.now(),job:'service',level:0,experience:0,lastWork:0,home:'room',car:'none',items:[],listings:[],offers:[],bank:[],events:[],stress:15,health:85,baseMood:82,debt:0,raise:0,food:'normal',hobby:'none',pets:[],insurance:{home:false,device:false,car:false,pet:false},travel:0,studyUntil:0,negotiation:0,company:false,companyRevenue:0});
-let s;try{s={...fresh(),...(JSON.parse(localStorage.getItem(KEY)||'null')||{})}}catch{s=fresh()}
+let s;try{s={...fresh(),...(JSON.parse(localStorage.getItem(KEY)||'null')||{})}}catch(e){s=fresh();document.getElementById('message').textContent='Hinweis: Spielstand konnte nicht gelesen werden: '+e.message}
 for(let k of ['items','listings','offers','bank','events','pets'])if(!Array.isArray(s[k]))s[k]=[];
-s.items=s.items.map((x,i)=>({...x,uid:x.uid||('old'+i)}));s.listings=s.listings.filter(x=>x.uid);s.offers=s.offers.filter(x=>x.uid);
+s.items=s.items.filter(x=>x&&typeof x==='object').map((x,i)=>({...x,uid:x.uid||('old'+i)}));s.listings=s.listings.filter(x=>x.uid);s.offers=s.offers.filter(x=>x.uid);
 const find=(a,id)=>a.find(x=>x.id===id),car=()=>find(cars,s.car)||cars[0],home=()=>find(homes,s.home)||homes[0],job=()=>find(jobs,s.job)||jobs[0],info=it=>it.kind==='car'?find(cars,it.id):find(goods,it.id),owned=()=>s.items.filter(x=>info(x));
 let tab='overview',message='',category='Alle',tier='Alle';
 function save(){localStorage.setItem(KEY,JSON.stringify(s))}
@@ -74,5 +77,5 @@ function test(){return '<div class="grid">'+card('⏱️ Teststeuerung',line('Sp
 const pages={overview:['🏠 Übersicht',overview],bank:['💳 Bank',bank],career:['💼 Beruf',career],housing:['🏘️ Wohnen & Auto',housing],shop:['🛍️ Shop',shop],inventory:['📦 Inventar',inventory],market:['🛒 Kleinanzeigen',market],life:['❤️ Leben',life],test:['⏱️ Test',test]};
 function go(x){tab=x;message='';render()}
 function render(){document.getElementById('clock').textContent='Spieltag '+s.day+' · 60 Minuten = 1 Tag';document.getElementById('stats').innerHTML=[['Kontostand',fmt(s.money)],['Netto / Monat',fmt(net())],['Fixkosten / Monat',fmt(costs())],['Zufriedenheit',mood()+'/100']].map(([k,v])=>'<div class="stat"><small>'+k+'</small><strong>'+v+'</strong></div>').join('');document.getElementById('nav').innerHTML=Object.entries(pages).map(([id,[name]])=>btn(name,`go('${id}')`,id===tab?'active':'')).join('');document.getElementById('message').innerHTML=message?'<div class="notice">'+esc(message)+'</div>':'';document.getElementById('view').innerHTML=pages[tab][1]()}
-render();setInterval(()=>{sync();render()},30000);
+try{render()}catch(e){document.getElementById('message').textContent='⚠️ Startfehler: '+e.message+' — bitte Screenshot schicken.'}setInterval(()=>{try{sync();render()}catch(e){document.getElementById('message').textContent='⚠️ Fehler: '+e.message}},30000);
 </script></html>
